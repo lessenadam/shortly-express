@@ -6,6 +6,8 @@ Shortly.Router = Backbone.Router.extend({
   routes: {
     '': 'index',
     'create': 'create'
+    // 'login': 'login',
+    // 'signup': 'signup'
   },
 
   swapView: function(view) {

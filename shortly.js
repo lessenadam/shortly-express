@@ -2,6 +2,7 @@ var express = require('express');
 var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
+var loggify = require('./loggify');
 
 
 var db = require('./app/config');
@@ -22,6 +23,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
 
+app.use(loggify);
 
 app.get('/', 
 function(req, res) {
@@ -76,6 +78,47 @@ function(req, res) {
 // Write your authentication routes here
 /************************************************************/
 
+// LOGIN
+
+app.get('/login', 
+function(req, res) {
+  res.render('login');
+});
+
+app.post('/login', 
+function(req, res) {
+  console.log(req.body.username);
+  console.log(req.body.password);
+  res.end();
+});
+
+// SIGN UP
+
+app.get('/signup', 
+function(req, res) {
+  res.render('signup');
+});
+
+app.post('/signup', 
+function(req, res) {
+  // console.log(req.body);
+  // console.log(req.body.password);
+
+  new User({username: req.body.username, password: req.body.password})
+  .fetch()
+  .then(function(user) {
+    console.log(user);
+    if (!user) {
+      console.log('about to save a user!!!: ', this);
+      this.save();
+    } else {
+      //redirect to login page 
+      //res.render('/index');
+      console.log('redirect');
+    }
+  });
+  res.end();
+});
 
 
 /************************************************************/
@@ -85,6 +128,7 @@ function(req, res) {
 /************************************************************/
 
 app.get('/*', function(req, res) {
+  console.log('Im a star');
   new Link({ code: req.params[0] }).fetch().then(function(link) {
     if (!link) {
       res.redirect('/');
