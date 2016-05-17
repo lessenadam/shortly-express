@@ -23,35 +23,36 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static(__dirname + '/public'));
 
+app.use(session({secret: 'how now brown cow', cookie: { maxAge: 1200000000 }}));
+
+
 app.use(loggify);
 
-var checkUser = function(username) {
-  return req.session.authenticated;
-};
-
 app.get('/', 
+util.checkUser,
 function(req, res) {
-  res.redirect('login');
+  res.render('index');
 });
 
 app.get('/create', 
+util.checkUser,
 function(req, res) {
-  // res.render('index');
-  res.redirect('login');
+  res.render('index');
 });
 
 app.get('/links', 
+util.checkUser,
 function(req, res) {
-  res.redirect('login');
-  // Links.reset().fetch().then(function(links) {
-  //   res.status(200).send(links.models);
-  // });
+  Links.reset().fetch().then(function(links) {
+    res.status(200).send(links.models);
+  });
 });
 
 app.post('/links', 
+// util.checkUser,
 function(req, res) {
   var uri = req.body.url;
-
+  // console.log('we are authenticated and in /links POST');
   if (!util.isValidUrl(uri)) {
     console.log('Not a valid url: ', uri);
     return res.sendStatus(404);
@@ -99,14 +100,19 @@ function(req, res) {
   .fetch()
   .then(function(user) {
     if (user) {
-      console.log('Logging in!: ', this);
-      req.session.authenticated = true;
+      //session initiated
+      console.log('USER SHOULD BE REDIRECTED---------');
+      req.session.regenerate(function() {
+        req.session.user = req.body.username;
+        res.redirect('/');
+      });
+      // console.log('Logging in!: ', this);
     } else {
       //redirect to login page 
-      res.redirect('login');
+      console.log('TEST FAILING HERE------------');
+      res.redirect('/login');
     }
   });
-  res.end();
 });
 
 // SIGN UP
@@ -127,16 +133,28 @@ function(req, res) {
     // console.log(user);
     if (!user) {
       console.log('about to save a user!!!: ', this);
-      this.save();
+      this.save().then(function(saveStatus) {
+        console.log(saveStatus);
+        req.session.regenerate(function() {
+          req.session.user = req.body.username;
+          res.redirect('/');
+        });
+      });
     } else {
       //redirect to login page 
       //res.render('/index');
       console.log('redirect');
+      res.end();
     }
   });
-  res.end();
 });
 
+// LOGOUT
+app.get('/logout', function(req, res) {
+  req.session.destroy(function() {
+    res.redirect('login');
+  });
+});
 
 /************************************************************/
 // Handle the wildcard route last - if all other routes fail
