@@ -3,7 +3,7 @@ var util = require('./lib/utility');
 var partials = require('express-partials');
 var bodyParser = require('body-parser');
 var loggify = require('./loggify');
-
+var session = require('express-session');
 
 var db = require('./app/config');
 var Users = require('./app/collections/users');
@@ -25,21 +25,27 @@ app.use(express.static(__dirname + '/public'));
 
 app.use(loggify);
 
+var checkUser = function(username) {
+  return req.session.authenticated;
+};
+
 app.get('/', 
 function(req, res) {
-  res.render('index');
+  res.redirect('login');
 });
 
 app.get('/create', 
 function(req, res) {
-  res.render('index');
+  // res.render('index');
+  res.redirect('login');
 });
 
 app.get('/links', 
 function(req, res) {
-  Links.reset().fetch().then(function(links) {
-    res.status(200).send(links.models);
-  });
+  res.redirect('login');
+  // Links.reset().fetch().then(function(links) {
+  //   res.status(200).send(links.models);
+  // });
 });
 
 app.post('/links', 
@@ -87,8 +93,19 @@ function(req, res) {
 
 app.post('/login', 
 function(req, res) {
-  console.log(req.body.username);
-  console.log(req.body.password);
+  // console.log(req.body.username);
+  // console.log(req.body.password);
+  new User({username: req.body.username, password: req.body.password})
+  .fetch()
+  .then(function(user) {
+    if (user) {
+      console.log('Logging in!: ', this);
+      req.session.authenticated = true;
+    } else {
+      //redirect to login page 
+      res.redirect('login');
+    }
+  });
   res.end();
 });
 
@@ -107,7 +124,7 @@ function(req, res) {
   new User({username: req.body.username, password: req.body.password})
   .fetch()
   .then(function(user) {
-    console.log(user);
+    // console.log(user);
     if (!user) {
       console.log('about to save a user!!!: ', this);
       this.save();
